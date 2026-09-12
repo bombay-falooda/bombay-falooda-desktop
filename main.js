@@ -28,6 +28,10 @@ const PORTALS = {
 };
 
 function getRequestedPortal() {
+  if (process.env.TARGET_PORTAL && PORTALS[process.env.TARGET_PORTAL]) {
+    return process.env.TARGET_PORTAL;
+  }
+
   const args = process.argv.slice(1);
   for (const arg of args) {
     if (arg.startsWith("--portal=")) {
@@ -35,9 +39,18 @@ function getRequestedPortal() {
       if (PORTALS[p]) return p;
     }
   }
-  const appName = (app.getName() || "").toLowerCase();
-  if (appName.includes("superadmin") || appName.includes("admin")) return "superadmin";
-  if (appName.includes("franchise")) return "franchise";
+
+  const fullStr = `${process.execPath || ""} ${app.getName() || ""} ${process.title || ""}`.toLowerCase();
+  if (fullStr.includes("superadmin") || fullStr.includes("super-admin") || fullStr.includes("admin")) {
+    return "superadmin";
+  }
+  if (fullStr.includes("franchise")) {
+    return "franchise";
+  }
+  if (fullStr.includes("pos") || fullStr.includes("terminal")) {
+    return "pos";
+  }
+
   return "pos"; // Default to POS Terminal
 }
 

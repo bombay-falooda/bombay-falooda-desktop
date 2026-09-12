@@ -8,9 +8,9 @@
     "start:superadmin": "electron . --portal=superadmin",
     "start:franchise": "electron . --portal=franchise",
     "start:pos": "electron . --portal=pos",
-    "build:pos": "electron-builder --win nsis -c.productName=\"Bombay Falooda POS Terminal\" -c.artifactName=\"Bombay-Falooda-POS-Setup.exe\"",
-    "build:franchise": "electron-builder --win nsis -c.productName=\"Bombay Falooda Franchise Portal\" -c.artifactName=\"Bombay-Falooda-Franchise-Setup.exe\"",
-    "build:superadmin": "electron-builder --win nsis -c.productName=\"Bombay Falooda SuperAdmin Workspace\" -c.artifactName=\"Bombay-Falooda-SuperAdmin-Setup.exe\"",
+    "build:pos": "electron-builder --win nsis -c.extraMetadata.main=\"main-pos.js\" -c.appId=\"com.bombayfalooda.pos\" -c.productName=\"Bombay Falooda POS Terminal\" -c.artifactName=\"Bombay-Falooda-POS-Setup.exe\"",
+    "build:franchise": "electron-builder --win nsis -c.extraMetadata.main=\"main-franchise.js\" -c.appId=\"com.bombayfalooda.franchise\" -c.productName=\"Bombay Falooda Franchise Portal\" -c.artifactName=\"Bombay-Falooda-Franchise-Setup.exe\"",
+    "build:superadmin": "electron-builder --win nsis -c.extraMetadata.main=\"main-superadmin.js\" -c.appId=\"com.bombayfalooda.superadmin\" -c.productName=\"Bombay Falooda SuperAdmin Workspace\" -c.artifactName=\"Bombay-Falooda-SuperAdmin-Setup.exe\"",
     "build:all": "npm run build:pos && npm run build:franchise && npm run build:superadmin"
   },
   "build": {
