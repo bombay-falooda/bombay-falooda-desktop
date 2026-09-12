@@ -1,0 +1,39 @@
+{
+  "name": "bombay-falooda-desktop",
+  "version": "1.0.0",
+  "description": "Bombay Falooda Native Desktop Application for SuperAdmin, Franchise & POS Terminal",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron . --portal=pos",
+    "start:superadmin": "electron . --portal=superadmin",
+    "start:franchise": "electron . --portal=franchise",
+    "start:pos": "electron . --portal=pos",
+    "build:pos": "electron-builder --win nsis -c.productName=\"Bombay Falooda POS Terminal\" -c.artifactName=\"Bombay-Falooda-POS-Setup.exe\"",
+    "build:franchise": "electron-builder --win nsis -c.productName=\"Bombay Falooda Franchise Portal\" -c.artifactName=\"Bombay-Falooda-Franchise-Setup.exe\"",
+    "build:superadmin": "electron-builder --win nsis -c.productName=\"Bombay Falooda SuperAdmin Workspace\" -c.artifactName=\"Bombay-Falooda-SuperAdmin-Setup.exe\"",
+    "build:all": "npm run build:pos && npm run build:franchise && npm run build:superadmin"
+  },
+  "build": {
+    "appId": "com.bombayfalooda.desktop",
+    "productName": "Bombay Falooda Desktop App",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico",
+      "verifyUpdateCodeSignature": false
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico"
+    }
+  },
+  "devDependencies": {
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8"
+  }
+}
