@@ -87,78 +87,8 @@ function createWindow(portalKey = "pos") {
     mainWindow = null;
   });
 
-  if (portalKey === "pos") {
-    Menu.setApplicationMenu(null);
-  } else {
-    buildMenu(portalKey);
-  }
-}
-
-function buildMenu(activePortal) {
-  const template = [
-    {
-      label: "Portals",
-      submenu: [
-        {
-          label: "POS Billing Terminal",
-          type: "radio",
-          checked: activePortal === "pos",
-          click: () => switchPortal("pos"),
-        },
-        {
-          label: "Franchise Owner Portal",
-          type: "radio",
-          checked: activePortal === "franchise",
-          click: () => switchPortal("franchise"),
-        },
-        {
-          label: "SuperAdmin Workspace",
-          type: "radio",
-          checked: activePortal === "superadmin",
-          click: () => switchPortal("superadmin"),
-        },
-        { type: "separator" },
-        { label: "Exit App", role: "quit" },
-      ],
-    },
-
-    {
-      label: "View",
-      submenu: [
-        { role: "reload" },
-        { role: "forceReload" },
-        { role: "toggleDevTools" },
-        { type: "separator" },
-        { role: "resetZoom" },
-        { role: "zoomIn" },
-        { role: "zoomOut" },
-        { type: "separator" },
-        { role: "togglefullscreen" },
-      ],
-    },
-    {
-      label: "Help",
-      submenu: [
-        {
-          label: "Open Bombay Falooda Support",
-          click: async () => {
-            await shell.openExternal("https://bombayfalooda.com");
-          },
-        },
-      ],
-    },
-  ];
-
-  const menu = Menu.buildFromTemplate(template);
-  Menu.setApplicationMenu(menu);
-}
-
-function switchPortal(portalKey) {
-  if (PORTALS[portalKey] && mainWindow) {
-    mainWindow.setTitle(PORTALS[portalKey].title);
-    mainWindow.loadURL(PORTALS[portalKey].url);
-    buildMenu(portalKey);
-  }
+  // Dedicated clean window without top menu bar (fullscreen, reload, zoom shortcuts work natively)
+  Menu.setApplicationMenu(null);
 }
 
 app.commandLine.appendSwitch('kiosk-printing');
