@@ -185,15 +185,10 @@ ipcMain.on("silent-print", async (event, options = {}) => {
           } catch (e) {}
           await new Promise((resolve) => setTimeout(resolve, 300));
 
-          // 3. Pass explicit thermal roll pageSize and deviceName
+          // 3. Omit custom pageSize object so POS-80 uses its native driver roll configuration
           const printOpts = {
             silent: true,
             printBackground: true,
-            margins: { marginType: "none" },
-            pageSize: {
-              width: 80000,
-              height: 250000,
-            },
           };
           if (targetDeviceName) {
             printOpts.deviceName = targetDeviceName;
