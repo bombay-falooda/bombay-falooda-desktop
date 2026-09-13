@@ -93,10 +93,31 @@ function createWindow(portalKey = "pos") {
 
 app.commandLine.appendSwitch('kiosk-printing');
 
-// Handle silent print IPC from preload.js (intercepts window.print() before OS dialog appears)
-ipcMain.on("silent-print", () => {
+// Handle get-printers IPC from renderer (returns all Windows installed printers)
+ipcMain.handle("get-printers", async () => {
   if (mainWindow) {
-    mainWindow.webContents.print({ silent: true, printBackground: true }, (success, errorType) => {
+    try {
+      return await mainWindow.webContents.getPrintersAsync();
+    } catch (err) {
+      console.error("Failed to get printers:", err);
+      return [];
+    }
+  }
+  return [];
+});
+
+// Handle silent print IPC from preload.js (intercepts window.print() before OS dialog appears)
+ipcMain.on("silent-print", (event, options = {}) => {
+  if (mainWindow) {
+    const printOpts = {
+      silent: true,
+      printBackground: true,
+      margins: { marginType: "none" },
+    };
+    if (options && options.deviceName) {
+      printOpts.deviceName = options.deviceName;
+    }
+    mainWindow.webContents.print(printOpts, (success, errorType) => {
       if (!success) console.error("Silent print failed:", errorType);
     });
   }
