@@ -9,6 +9,24 @@ window.electronAPI = {
       return [];
     }
   },
+  printRawEscPos: async (data, printerName) => {
+    try {
+      let base64 = "";
+      if (typeof data === "string") {
+        base64 = data;
+      } else if (data instanceof Uint8Array || Array.isArray(data)) {
+        base64 = Buffer.from(data).toString("base64");
+      }
+      const targetPrinter = printerName || localStorage.getItem("pos_printer_name") || "POS-80";
+      return await ipcRenderer.invoke("raw-print", {
+        base64Data: base64,
+        printerName: targetPrinter,
+      });
+    } catch (e) {
+      console.error("printRawEscPos error:", e);
+      return { success: false, error: e.message };
+    }
+  },
   printSilent: (options) => {
     let savedName = undefined;
     try {
