@@ -114,7 +114,6 @@ ipcMain.on("silent-print", async (event, options = {}) => {
       const printOpts = {
         silent: true,
         printBackground: true,
-        margins: { marginType: "none" },
       };
 
       if (options && options.deviceName) {
@@ -128,12 +127,10 @@ ipcMain.on("silent-print", async (event, options = {}) => {
 
       mainWindow.webContents.print(printOpts, (success, errorType) => {
         if (!success) {
-          console.error("Silent print failed:", errorType);
-          // Fallback to default Windows printer if specified printer name failed
+          console.error("Silent print failed with deviceName, falling back to default:", errorType);
           mainWindow.webContents.print({
             silent: true,
             printBackground: true,
-            margins: { marginType: "none" },
           });
         }
       });
@@ -142,7 +139,6 @@ ipcMain.on("silent-print", async (event, options = {}) => {
       mainWindow.webContents.print({
         silent: true,
         printBackground: true,
-        margins: { marginType: "none" },
       });
     }
   }
