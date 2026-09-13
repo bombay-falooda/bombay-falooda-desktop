@@ -10,12 +10,11 @@ window.electronAPI = {
     }
   },
   printSilent: (options) => {
-    ipcRenderer.send("silent-print", options || {});
+    // If deviceName specified or window.print invoked
+    if (options && options.deviceName) {
+      ipcRenderer.send("silent-print", options);
+    } else {
+      window.print();
+    }
   },
-};
-
-// With contextIsolation: false, this runs in the SAME context as the page
-// So window.print is actually overridden on the page — no OS dialog ever fires
-window.print = function (options) {
-  ipcRenderer.send("silent-print", options || {});
 };
