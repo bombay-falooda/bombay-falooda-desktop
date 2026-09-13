@@ -107,19 +107,44 @@ ipcMain.handle("get-printers", async () => {
 });
 
 // Handle silent print IPC from preload.js (intercepts window.print() before OS dialog appears)
-ipcMain.on("silent-print", (event, options = {}) => {
+ipcMain.on("silent-print", async (event, options = {}) => {
   if (mainWindow) {
-    const printOpts = {
-      silent: true,
-      printBackground: true,
-      margins: { marginType: "none" },
-    };
-    if (options && options.deviceName) {
-      printOpts.deviceName = options.deviceName;
+    try {
+      const installedPrinters = await mainWindow.webContents.getPrintersAsync();
+      const printOpts = {
+        silent: true,
+        printBackground: true,
+        margins: { marginType: "none" },
+      };
+
+      if (options && options.deviceName) {
+        const found = installedPrinters.find(
+          (p) => p.name.toLowerCase() === options.deviceName.toLowerCase()
+        );
+        if (found) {
+          printOpts.deviceName = found.name;
+        }
+      }
+
+      mainWindow.webContents.print(printOpts, (success, errorType) => {
+        if (!success) {
+          console.error("Silent print failed:", errorType);
+          // Fallback to default Windows printer if specified printer name failed
+          mainWindow.webContents.print({
+            silent: true,
+            printBackground: true,
+            margins: { marginType: "none" },
+          });
+        }
+      });
+    } catch (err) {
+      console.error("Print exception:", err);
+      mainWindow.webContents.print({
+        silent: true,
+        printBackground: true,
+        margins: { marginType: "none" },
+      });
     }
-    mainWindow.webContents.print(printOpts, (success, errorType) => {
-      if (!success) console.error("Silent print failed:", errorType);
-    });
   }
 });
 
