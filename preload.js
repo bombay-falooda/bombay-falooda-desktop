@@ -18,7 +18,7 @@ window.electronAPI = {
     let html = options && options.html;
     if (!html && typeof document !== "undefined") {
       const el = document.getElementById("print-ticket-root");
-      if (el) html = el.innerHTML;
+      if (el) html = el.outerHTML || el.innerHTML;
     }
 
     const opts = Object.assign({}, options || {}, {
@@ -39,7 +39,7 @@ window.print = function (options) {
   let html = options && options.html;
   if (!html && typeof document !== "undefined") {
     const el = document.getElementById("print-ticket-root");
-    if (el) html = el.innerHTML;
+    if (el) html = el.outerHTML || el.innerHTML;
   }
 
   const opts = Object.assign({}, options || {}, {

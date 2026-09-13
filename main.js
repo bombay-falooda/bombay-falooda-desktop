@@ -1,5 +1,6 @@
 const { app, BrowserWindow, Menu, ipcMain, shell } = require("electron");
 const path = require("path");
+const fs = require("fs");
 
 let mainWindow = null;
 let tray = null;
@@ -126,7 +127,7 @@ ipcMain.on("silent-print", async (event, options = {}) => {
       if (defaultP) targetDeviceName = defaultP.name;
     }
 
-    // If receipt HTML is provided, print via dedicated clean offscreen window
+    // If receipt HTML is provided, print via dedicated clean offscreen worker window
     if (options && options.html) {
       const workerWin = new BrowserWindow({
         show: false,
@@ -167,44 +168,57 @@ ipcMain.on("silent-print", async (event, options = {}) => {
 </body>
 </html>`;
 
-      workerWin.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(fullHtml)}`);
+      // Save debug copy for inspection
+      try {
+        const debugPath = path.join(app.getPath("temp"), "last-pos-print.html");
+        fs.writeFileSync(debugPath, fullHtml, "utf8");
+      } catch (e) {}
 
-      workerWin.webContents.on("did-finish-load", () => {
-        const printOpts = {
-          silent: true,
-          printBackground: true,
-        };
-        if (targetDeviceName) {
-          printOpts.deviceName = targetDeviceName;
-        }
+      // 1. Attach listener BEFORE loadURL to avoid race conditions
+      workerWin.webContents.once("did-finish-load", async () => {
+        try {
+          // 2. Wait for fonts and layout to completely settle
+          try {
+            await workerWin.webContents.executeJavaScript(
+              `document.fonts && document.fonts.ready ? document.fonts.ready.then(() => true) : true`
+            );
+          } catch (e) {}
+          await new Promise((resolve) => setTimeout(resolve, 300));
 
-        workerWin.webContents.print(printOpts, (success, errorType) => {
-          if (!success) {
-            console.error("Worker silent print failed:", errorType);
+          // 3. Pass explicit thermal roll pageSize and deviceName
+          const printOpts = {
+            silent: true,
+            printBackground: true,
+            margins: { marginType: "none" },
+            pageSize: {
+              width: 80000,
+              height: 250000,
+            },
+          };
+          if (targetDeviceName) {
+            printOpts.deviceName = targetDeviceName;
           }
-          setTimeout(() => {
-            try { workerWin.destroy(); } catch (e) {}
-          }, 1000);
-        });
+
+          workerWin.webContents.print(printOpts, (success, errorType) => {
+            if (!success) {
+              console.error("Worker silent print failed:", errorType);
+            }
+            setTimeout(() => {
+              try { workerWin.destroy(); } catch (e) {}
+            }, 1000);
+          });
+        } catch (err) {
+          console.error("Worker print execution error:", err);
+          try { workerWin.destroy(); } catch (e) {}
+        }
       });
+
+      // Load URL after listener is attached
+      await workerWin.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(fullHtml)}`);
       return;
     }
 
-    // Fallback: print main window directly
-    if (mainWindow) {
-      const printOpts = {
-        silent: true,
-        printBackground: true,
-      };
-      if (targetDeviceName) {
-        printOpts.deviceName = targetDeviceName;
-      }
-      mainWindow.webContents.print(printOpts, (success, errorType) => {
-        if (!success) {
-          console.error("Direct silent print failed:", errorType);
-        }
-      });
-    }
+    console.warn("Silent print requested but no receipt HTML was captured; skipping to prevent blank print.");
   } catch (err) {
     console.error("Print exception:", err);
   }
