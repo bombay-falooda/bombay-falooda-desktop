@@ -112,7 +112,7 @@ const { execFile } = require("child_process");
 // Native Win32 Spooler Raw ESC/POS Print Handler (Zero-Dialog, Instant 0ms Thermal Printing)
 ipcMain.handle("raw-print", async (event, payload = {}) => {
   try {
-    const targetPrinter = payload.printerName || "POS-80";
+    let targetPrinter = payload.printerName || "POS-80";
     const base64Data = payload.base64Data || "";
 
     if (!base64Data) {
@@ -172,17 +172,40 @@ public class RawPrinterHelper {
 if (-not ([System.Management.Automation.PSTypeName]'RawPrinterHelper').Type) {
     Add-Type -TypeDefinition $code
 }
+
+Add-Type -AssemblyName System.Drawing
+$target = "${targetPrinter}".Trim()
+$installed = [System.Drawing.Printing.PrinterSettings]::InstalledPrinters
+
+# If target is generic placeholder or not installed, find the actual thermal printer:
+if ($target -eq "Thermal Receipt Printer (80mm)" -or -not ($installed -contains $target)) {
+    $match = $installed | Where-Object { $_ -match "POS-80" -or $_ -match "POS" -or $_ -match "80" -or $_ -match "Thermal" } | Select-Object -First 1
+    if ($match) {
+        $target = $match
+    } else {
+        $def = (New-Object System.Drawing.Printing.PrinterSettings).PrinterName
+        if ($def) { $target = $def }
+    }
+}
+
 $bytes = [System.Convert]::FromBase64String("${base64Data}")
-[RawPrinterHelper]::SendBytesToPrinter("${targetPrinter}", $bytes)
+$result = [RawPrinterHelper]::SendBytesToPrinter($target, $bytes)
+if ($result) {
+    Write-Output "SUCCESS:$target"
+} else {
+    Write-Error "Failed to print to $target"
+}
 `;
 
     return new Promise((resolve) => {
       execFile("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", psScript], (err, stdout, stderr) => {
         if (err) {
-          console.error("Native spooler raw print error:", err);
-          resolve({ success: false, error: err.message });
+          console.error("Native spooler raw print error:", err, stderr);
+          resolve({ success: false, error: stderr || err.message });
         } else {
-          resolve({ success: true });
+          const out = (stdout || "").trim();
+          const printerUsed = out.startsWith("SUCCESS:") ? out.replace("SUCCESS:", "") : targetPrinter;
+          resolve({ success: true, printer: printerUsed });
         }
       });
     });
