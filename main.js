@@ -109,16 +109,45 @@ ipcMain.handle("get-printers", async () => {
 
 const { execFile } = require("child_process");
 
-// Native Win32 Spooler Raw ESC/POS Print Handler (Zero-Dialog, Instant 0ms Thermal Printing)
+// Native Win32 Spooler Raw ESC/POS Print Handler (Zero-Dialog, Instant <30ms Thermal Printing)
 ipcMain.handle("raw-print", async (event, payload = {}) => {
   try {
-    let targetPrinter = payload.printerName || "POS-80";
+    let targetPrinter = payload.printerName || "Posiflex HS3inch printer 576";
     const base64Data = payload.base64Data || "";
 
     if (!base64Data) {
       return { success: false, error: "No data payload provided" };
     }
 
+    // Check for pre-compiled high-performance native binary helper
+    const nativeHelperPaths = [
+      path.join(__dirname, "raw-printer.exe"),
+      path.join(process.resourcesPath || "", "raw-printer.exe"),
+      path.join(app.getAppPath(), "raw-printer.exe"),
+    ];
+    const helperExe = nativeHelperPaths.find((p) => fs.existsSync(p));
+
+    if (helperExe) {
+      return new Promise((resolve) => {
+        execFile(
+          helperExe,
+          [targetPrinter, base64Data],
+          { maxBuffer: 10 * 1024 * 1024 },
+          (err, stdout, stderr) => {
+            if (err) {
+              console.error("raw-printer.exe error:", err, stderr);
+              resolve({ success: false, error: stderr || err.message });
+            } else {
+              const out = (stdout || "").trim();
+              const printerUsed = out.startsWith("SUCCESS:") ? out.replace("SUCCESS:", "") : targetPrinter;
+              resolve({ success: true, printer: printerUsed });
+            }
+          }
+        );
+      });
+    }
+
+    // Fallback: PowerShell script (if binary helper not found)
     const psScript = `
 $code = @"
 using System;
@@ -177,7 +206,6 @@ Add-Type -AssemblyName System.Drawing
 $target = "${targetPrinter}".Trim()
 $installed = [System.Drawing.Printing.PrinterSettings]::InstalledPrinters
 
-# Match target printer case-insensitively or find any installed thermal/Posiflex printer
 $exactOrFuzzy = $installed | Where-Object { $_ -eq $target -or $_ -like "*$target*" } | Select-Object -First 1
 if ($exactOrFuzzy) {
     $target = $exactOrFuzzy

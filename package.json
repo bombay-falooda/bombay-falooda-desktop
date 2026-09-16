@@ -19,6 +19,12 @@
     "directories": {
       "output": "dist"
     },
+    "extraResources": [
+      "raw-printer.exe"
+    ],
+    "files": [
+      "**/*"
+    ],
     "win": {
       "target": "nsis",
       "icon": "build/icon.ico",
