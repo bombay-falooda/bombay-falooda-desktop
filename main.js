@@ -177,9 +177,12 @@ Add-Type -AssemblyName System.Drawing
 $target = "${targetPrinter}".Trim()
 $installed = [System.Drawing.Printing.PrinterSettings]::InstalledPrinters
 
-# If target is generic placeholder or not installed, find the actual thermal printer:
-if ($target -eq "Thermal Receipt Printer (80mm)" -or -not ($installed -contains $target)) {
-    $match = $installed | Where-Object { $_ -match "POS-80" -or $_ -match "POS" -or $_ -match "80" -or $_ -match "Thermal" } | Select-Object -First 1
+# Match target printer case-insensitively or find any installed thermal/Posiflex printer
+$exactOrFuzzy = $installed | Where-Object { $_ -eq $target -or $_ -like "*$target*" } | Select-Object -First 1
+if ($exactOrFuzzy) {
+    $target = $exactOrFuzzy
+} else {
+    $match = $installed | Where-Object { $_ -match "Posiflex" -or $_ -match "POS-80" -or $_ -match "POS" -or $_ -match "80" -or $_ -match "Thermal" -or $_ -match "576" -or $_ -match "Receipt" } | Select-Object -First 1
     if ($match) {
         $target = $match
     } else {
