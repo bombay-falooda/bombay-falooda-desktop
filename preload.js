@@ -1,7 +1,22 @@
 const { ipcRenderer } = require("electron");
+const os = require("os");
 
 window.isElectron = true;
 window.electronAPI = {
+  getMachineName: () => {
+    try {
+      return os.hostname();
+    } catch (e) {
+      return "Desktop-PC";
+    }
+  },
+  getPlatform: () => {
+    try {
+      return os.platform();
+    } catch (e) {
+      return "win32";
+    }
+  },
   getPrinters: async () => {
     try {
       return await ipcRenderer.invoke("get-printers");
