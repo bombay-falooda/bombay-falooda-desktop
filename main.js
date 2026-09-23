@@ -265,7 +265,7 @@ ipcMain.on("silent-print", async (event, options = {}) => {
   <style>
     @page { margin: 0; size: 80mm auto; }
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color: #000 !important; box-sizing: border-box; }
-    body { margin: 0; padding: 1mm 2mm; width: 72mm; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 12px; }
+    body { margin: 0; padding: 0.5mm 1.5mm; width: 68mm; max-width: 68mm; font-family: 'Aukim II Strokes', 'Aukim II Strokes Medium', 'Aukim II', 'Aukim', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 12px; font-weight: 600; line-height: 1.3; }
     table { width: 100%; border-collapse: collapse; }
   </style>
 </head>
