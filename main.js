@@ -246,6 +246,59 @@ if ($result) {
   }
 });
 
+// Silent HTML / CSS Web Print Handler (Supports custom fonts, styling, barcodes, logos)
+ipcMain.on("silent-print", async (event, options = {}) => {
+  try {
+    const targetPrinter = options.deviceName || "POS-80";
+    const printWindow = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+      },
+    });
+
+    const fullHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    @page { margin: 0; size: 80mm auto; }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color: #000 !important; box-sizing: border-box; }
+    body { margin: 0; padding: 1mm 2mm; width: 72mm; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 12px; }
+    table { width: 100%; border-collapse: collapse; }
+  </style>
+</head>
+<body>
+  ${options.html || ""}
+</body>
+</html>`;
+
+    await printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(fullHtml)}`);
+
+    printWindow.webContents.print(
+      {
+        silent: true,
+        printBackground: true,
+        deviceName: targetPrinter,
+        margins: { marginType: "none" },
+      },
+      (success, failureReason) => {
+        if (!success) {
+          console.warn("Silent print failed:", failureReason);
+        }
+        setTimeout(() => {
+          if (!printWindow.isDestroyed()) {
+            printWindow.close();
+          }
+        }, 1000);
+      }
+    );
+  } catch (err) {
+    console.error("silent-print IPC error:", err);
+  }
+});
+
 app.whenReady().then(() => {
   const targetPortal = getRequestedPortal();
   createWindow(targetPortal);
