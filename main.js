@@ -246,10 +246,10 @@ if ($result) {
   }
 });
 
-// Silent HTML / CSS Web Print Handler (Supports custom fonts, styling, barcodes, logos)
+// Silent HTML / CSS Web Print Handler (Matches Chrome rendering exactly with Arial font)
 ipcMain.on("silent-print", async (event, options = {}) => {
   try {
-    const targetPrinter = options.deviceName || "POS-80";
+    const targetPrinter = options.deviceName || "Posiflex HS3inch printer 576";
     const printWindow = new BrowserWindow({
       show: false,
       webPreferences: {
@@ -264,9 +264,31 @@ ipcMain.on("silent-print", async (event, options = {}) => {
   <meta charset="utf-8">
   <style>
     @page { margin: 0; size: 80mm auto; }
-    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color: #000 !important; box-sizing: border-box; }
-    body { margin: 0; padding: 0.5mm 1.5mm; width: 68mm; max-width: 68mm; font-family: 'Aukim II Strokes', 'Aukim II Strokes Medium', 'Aukim II', 'Aukim', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 12px; font-weight: 600; line-height: 1.3; }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color: #000000 !important; box-sizing: border-box; }
+    html, body { margin: 0 !important; padding: 0 !important; background: #ffffff !important; }
+    body {
+      width: 72mm !important;
+      max-width: 72mm !important;
+      padding: 1mm 2mm !important;
+      font-family: Arial, Helvetica, sans-serif !important;
+      font-size: 12px !important;
+      font-weight: 400 !important;
+      line-height: 1.3 !important;
+      color: #000000 !important;
+      -webkit-font-smoothing: antialiased !important;
+      text-rendering: geometricPrecision !important;
+    }
+    body * { font-family: Arial, Helvetica, sans-serif !important; }
+    #print-ticket-root {
+      display: block !important;
+      visibility: visible !important;
+      width: 100% !important;
+    }
+    strong, b, th, .font-bold, .font-semibold {
+      font-weight: 700 !important;
+    }
     table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 2.5px 0; }
   </style>
 </head>
 <body>
@@ -276,24 +298,28 @@ ipcMain.on("silent-print", async (event, options = {}) => {
 
     await printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(fullHtml)}`);
 
-    printWindow.webContents.print(
-      {
-        silent: true,
-        printBackground: true,
-        deviceName: targetPrinter,
-        margins: { marginType: "none" },
-      },
-      (success, failureReason) => {
-        if (!success) {
-          console.warn("Silent print failed:", failureReason);
-        }
-        setTimeout(() => {
-          if (!printWindow.isDestroyed()) {
-            printWindow.close();
+    // Give 300ms for all fonts & images (logo) to paint completely
+    setTimeout(() => {
+      if (printWindow.isDestroyed()) return;
+      printWindow.webContents.print(
+        {
+          silent: true,
+          printBackground: true,
+          deviceName: targetPrinter,
+          margins: { marginType: "none" },
+        },
+        (success, failureReason) => {
+          if (!success) {
+            console.warn("Silent print failed:", failureReason);
           }
-        }, 1000);
-      }
-    );
+          setTimeout(() => {
+            if (!printWindow.isDestroyed()) {
+              printWindow.close();
+            }
+          }, 1500);
+        }
+      );
+    }, 300);
   } catch (err) {
     console.error("silent-print IPC error:", err);
   }
