@@ -111,13 +111,19 @@ const { execFile } = require("child_process");
 
 // Native Win32 Spooler Raw ESC/POS Print Handler (Zero-Dialog, Instant <30ms Thermal Printing)
 ipcMain.handle("raw-print", async (event, payload = {}) => {
+  let tempFilePath = null;
   try {
-    let targetPrinter = payload.printerName || "Posiflex HS3inch printer 576";
+    let targetPrinter = (payload.printerName || "Posiflex HS3inch printer 576").trim();
     const base64Data = payload.base64Data || "";
 
     if (!base64Data) {
       return { success: false, error: "No data payload provided" };
     }
+
+    const binaryBuffer = Buffer.from(base64Data, "base64");
+    const os = require("os");
+    tempFilePath = path.join(os.tmpdir(), `pos-print-${Date.now()}-${Math.random().toString(36).substring(7)}.bin`);
+    fs.writeFileSync(tempFilePath, binaryBuffer);
 
     // Check for pre-compiled high-performance native binary helper
     const nativeHelperPaths = [
@@ -131,9 +137,10 @@ ipcMain.handle("raw-print", async (event, payload = {}) => {
       return new Promise((resolve) => {
         execFile(
           helperExe,
-          [targetPrinter, base64Data],
+          [targetPrinter, tempFilePath],
           { maxBuffer: 10 * 1024 * 1024 },
           (err, stdout, stderr) => {
+            try { if (tempFilePath && fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath); } catch (e) {}
             if (err) {
               console.error("raw-printer.exe error:", err, stderr);
               resolve({ success: false, error: stderr || err.message });
@@ -147,7 +154,7 @@ ipcMain.handle("raw-print", async (event, payload = {}) => {
       });
     }
 
-    // Fallback: PowerShell script (if binary helper not found)
+    // Fallback: PowerShell script using the temp file
     const psScript = `
 $code = @"
 using System;
@@ -219,7 +226,7 @@ if ($exactOrFuzzy) {
     }
 }
 
-$bytes = [System.Convert]::FromBase64String("${base64Data}")
+$bytes = [System.IO.File]::ReadAllBytes("${tempFilePath.replace(/\\/g, "\\\\")}")
 $result = [RawPrinterHelper]::SendBytesToPrinter($target, $bytes)
 if ($result) {
     Write-Output "SUCCESS:$target"
@@ -230,6 +237,7 @@ if ($result) {
 
     return new Promise((resolve) => {
       execFile("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", psScript], (err, stdout, stderr) => {
+        try { if (tempFilePath && fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath); } catch (e) {}
         if (err) {
           console.error("Native spooler raw print error:", err, stderr);
           resolve({ success: false, error: stderr || err.message });
@@ -241,6 +249,7 @@ if ($result) {
       });
     });
   } catch (err) {
+    try { if (tempFilePath && fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath); } catch (e) {}
     console.error("raw-print error:", err);
     return { success: false, error: String(err) };
   }
