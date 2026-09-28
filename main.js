@@ -75,6 +75,11 @@ function createWindow(portalKey = "pos") {
     },
   });
 
+  // Clear HTTP cache on startup so the latest VPS assets are always loaded
+  try {
+    mainWindow.webContents.session.clearCache();
+  } catch {}
+
   mainWindow.loadURL(portal.url);
 
   mainWindow.webContents.on("ready-to-show", () => {
@@ -82,7 +87,19 @@ function createWindow(portalKey = "pos") {
     mainWindow.focus();
   });
 
-
+  // Enable F5 / Ctrl+R / Ctrl+Shift+R cache-ignoring reload shortcut
+  mainWindow.webContents.on("before-input-event", (event, input) => {
+    if (input.type === "keyDown") {
+      if (input.key === "F5" || (input.control && input.key.toLowerCase() === "r")) {
+        mainWindow.webContents.reloadIgnoringCache();
+        event.preventDefault();
+      }
+      if (input.key === "F12" || (input.control && input.shift && input.key.toLowerCase() === "i")) {
+        mainWindow.webContents.toggleDevTools();
+        event.preventDefault();
+      }
+    }
+  });
 
   mainWindow.on("closed", () => {
     mainWindow = null;
