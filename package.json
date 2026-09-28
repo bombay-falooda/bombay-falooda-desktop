@@ -23,7 +23,15 @@
       "raw-printer.exe"
     ],
     "files": [
-      "**/*"
+      "main.js",
+      "main-pos.js",
+      "main-franchise.js",
+      "main-superadmin.js",
+      "preload.js",
+      "build/**/*",
+      "!dist/**/*",
+      "!*.zip",
+      "!*.exe"
     ],
     "win": {
       "target": "nsis",
