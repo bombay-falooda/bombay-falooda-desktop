@@ -7,6 +7,14 @@ let tray = null;
 
 const isDev = process.env.NODE_ENV === "development" || process.argv.includes("--dev");
 
+// Prevent desktop app shutdown on any unhandled printing or IPC errors
+process.on("uncaughtException", (err) => {
+  console.error("Desktop App Uncaught Exception (Recovered):", err);
+});
+process.on("unhandledRejection", (reason) => {
+  console.error("Desktop App Unhandled Rejection (Recovered):", reason);
+});
+
 const PORTALS = {
   superadmin: {
     title: "Bombay Falooda - SuperAdmin Workspace",

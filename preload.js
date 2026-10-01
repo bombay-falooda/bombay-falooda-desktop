@@ -30,7 +30,16 @@ window.electronAPI = {
       if (typeof data === "string") {
         base64 = data;
       } else if (data instanceof Uint8Array || Array.isArray(data)) {
-        base64 = Buffer.from(data).toString("base64");
+        if (typeof Buffer !== "undefined") {
+          base64 = Buffer.from(data).toString("base64");
+        } else {
+          let binary = "";
+          const bytes = new Uint8Array(data);
+          for (let i = 0; i < bytes.byteLength; i++) {
+            binary += String.fromCharCode(bytes[i]);
+          }
+          base64 = btoa(binary);
+        }
       }
       const targetPrinter = printerName || localStorage.getItem("pos_printer_name") || "POS-80";
       return await ipcRenderer.invoke("raw-print", {
