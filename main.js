@@ -347,9 +347,11 @@ ipcMain.on("silent-print", async (event, options = {}) => {
             console.warn("Silent print failed:", failureReason);
           }
           setTimeout(() => {
-            if (!printWindow.isDestroyed()) {
-              printWindow.close();
-            }
+            try {
+              if (printWindow && !printWindow.isDestroyed()) {
+                printWindow.destroy();
+              }
+            } catch (e) {}
           }, 1500);
         }
       );
@@ -370,7 +372,13 @@ app.whenReady().then(() => {
   });
 });
 
-app.on("window-all-closed", () => {
+app.on("window-all-closed", (e) => {
+  const allWindows = BrowserWindow.getAllWindows();
+  const hasMainWindow = allWindows.some((w) => w === mainWindow && !w.isDestroyed());
+  if (hasMainWindow) {
+    if (e && typeof e.preventDefault === "function") e.preventDefault();
+    return;
+  }
   if (process.platform !== "darwin") {
     app.quit();
   }
