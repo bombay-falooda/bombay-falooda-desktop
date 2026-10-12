@@ -76,6 +76,7 @@ function createWindow(portalKey = "pos") {
     show: false,
     autoHideMenuBar: portalKey === "pos",
     webPreferences: {
+      partition: portalKey === "pos" ? "persist:bombay_falooda_pos" : undefined,
       nodeIntegration: true,
       contextIsolation: false,
       webSecurity: true,
@@ -83,12 +84,30 @@ function createWindow(portalKey = "pos") {
     },
   });
 
-  // Clear HTTP cache on startup so the latest VPS assets are always loaded
-  try {
-    mainWindow.webContents.session.clearCache();
-  } catch {}
+  // Preserve local disk cache for POS so it opens cleanly without internet
+  if (portalKey !== "pos") {
+    try {
+      mainWindow.webContents.session.clearCache();
+    } catch {}
+  }
 
-  mainWindow.loadURL(portal.url);
+  // Handle offline startup resilience (if PC boots with no internet)
+  mainWindow.webContents.on("did-fail-load", (_event, errorCode, errorDescription) => {
+    console.warn(`[Desktop App] Initial load failed (${errorCode}: ${errorDescription}).`);
+    // If disconnected (ERR_INTERNET_DISCONNECTED / ERR_NAME_NOT_RESOLVED), show window and retry smoothly
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.show();
+      setTimeout(() => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.loadURL(portal.url).catch(() => {});
+        }
+      }, 5000);
+    }
+  });
+
+  mainWindow.loadURL(portal.url).catch((err) => {
+    console.warn("[Desktop App] loadURL warning:", err?.message || err);
+  });
 
   mainWindow.webContents.on("ready-to-show", () => {
     mainWindow.show();
